@@ -37,15 +37,36 @@ public class Server {
         while (true) {
             log.debug("没有事件发生，线程阻塞");
             //3、调用select方法。没有事件发生，线程阻塞，有事件，线程才会运行。减少不必要的线程运行
-            selector.select();
+            selector.select();//事件发生后，要么处理，要么取消。
             //4、处理事件,selectedKeys方法返回所有发生的事件
             final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
             while (iterator.hasNext()) {
                 final SelectionKey selectionKey = iterator.next();
+                //每处理完一个Key，都要从selectedKeys集合中移除。否则会出现空指针异常
+                iterator.remove();
                 log.debug("selectionKey:{}", selectionKey);
-                final ServerSocketChannel channel = (ServerSocketChannel) selectionKey.channel();
-                final SocketChannel sc = channel.accept();
-                log.debug("sc:{}", sc);
+                //5、区分事件类型
+                if(selectionKey.isAcceptable()){
+                    // Returns the channel for which this key was created.  This method will continue to return the channel even after the key is cancelled.
+                    final ServerSocketChannel ssChannel = (ServerSocketChannel) selectionKey.channel();
+                    //Accepts a connection made to this channel's socket.
+                    final SocketChannel sc = ssChannel.accept();
+                    //设置为Nio
+                    sc.configureBlocking(false);
+                    // Registers this channel with the given selector, returning a selection key.
+                    final SelectionKey sKey = sc.register(selector, 0, null);
+                    sKey.interestOps(SelectionKey.OP_READ);
+                }
+                if (selectionKey.isReadable()){
+                    final SocketChannel sc = (SocketChannel) selectionKey.channel();
+                    final ByteBuffer byteBuffer = ByteBuffer.allocate(20);
+                    //从通道读取数据到缓冲区
+                    sc.read(byteBuffer);
+                    //切换为读模式
+                    byteBuffer.flip();
+                    ByteBufferUtil.debugRead(byteBuffer);
+                }
+//              selectionKey.cancel();
             }
 
         }
