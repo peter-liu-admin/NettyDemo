@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -60,7 +61,7 @@ public class Server {
                 if (selectionKey.isReadable()) {
                     try {
                         final SocketChannel sc = (SocketChannel) selectionKey.channel();
-                        final ByteBuffer byteBuffer = ByteBuffer.allocate(20);
+                        final ByteBuffer byteBuffer = ByteBuffer.allocate(4);
                         //从通道读取数据到缓冲区
                         final int read = sc.read(byteBuffer);
                         //如果客户端正常断开(clientChannel.close();)，read方法返回-1。需要移除Key
@@ -69,7 +70,8 @@ public class Server {
                         }
                         //切换为读模式
                         byteBuffer.flip();
-                        ByteBufferUtil.debugRead(byteBuffer);
+//                        ByteBufferUtil.debugRead(byteBuffer);
+                        System.out.println(Charset.defaultCharset().decode(byteBuffer));
                     } catch (IOException e) {
                         //客户端断开后，一定要将Key移除掉，否则会循环抛出异常
                         selectionKey.cancel();

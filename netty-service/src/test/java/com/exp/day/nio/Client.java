@@ -17,7 +17,7 @@ public class Client {
     public static void main(String[] args) throws IOException {
         final SocketChannel clientChannel = SocketChannel.open();
         clientChannel.connect(new InetSocketAddress("localhost",8999));
-        clientChannel.write(Charset.defaultCharset().encode("helloa"));
+//        clientChannel.write(Charset.defaultCharset().encode("helloa"));
         log.debug("等待");
     }
 }
