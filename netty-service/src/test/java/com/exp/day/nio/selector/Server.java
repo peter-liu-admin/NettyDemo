@@ -46,7 +46,7 @@ public class Server {
                 iterator.remove();
                 log.debug("selectionKey:{}", selectionKey);
                 //5、区分事件类型
-                if(selectionKey.isAcceptable()){
+                if (selectionKey.isAcceptable()) {
                     // Returns the channel for which this key was created.  This method will continue to return the channel even after the key is cancelled.
                     final ServerSocketChannel ssChannel = (ServerSocketChannel) selectionKey.channel();
                     //Accepts a connection made to this channel's socket.
@@ -57,18 +57,25 @@ public class Server {
                     final SelectionKey sKey = sc.register(selector, 0, null);
                     sKey.interestOps(SelectionKey.OP_READ);
                 }
-                if (selectionKey.isReadable()){
-                    final SocketChannel sc = (SocketChannel) selectionKey.channel();
-                    final ByteBuffer byteBuffer = ByteBuffer.allocate(20);
-                    //从通道读取数据到缓冲区
-                    sc.read(byteBuffer);
-                    //切换为读模式
-                    byteBuffer.flip();
-                    ByteBufferUtil.debugRead(byteBuffer);
+                if (selectionKey.isReadable()) {
+                    try {
+                        final SocketChannel sc = (SocketChannel) selectionKey.channel();
+                        final ByteBuffer byteBuffer = ByteBuffer.allocate(20);
+                        //从通道读取数据到缓冲区
+                        final int read = sc.read(byteBuffer);
+                        //如果客户端正常断开(clientChannel.close();)，read方法返回-1。需要移除Key
+                        if (read == -1) {
+                            selectionKey.cancel();
+                        }
+                        //切换为读模式
+                        byteBuffer.flip();
+                        ByteBufferUtil.debugRead(byteBuffer);
+                    } catch (IOException e) {
+                        //客户端断开后，一定要将Key移除掉，否则会循环抛出异常
+                        selectionKey.cancel();
+                    }
                 }
-//              selectionKey.cancel();
             }
-
         }
     }
 }
