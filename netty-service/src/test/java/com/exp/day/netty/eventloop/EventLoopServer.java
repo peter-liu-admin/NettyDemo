@@ -2,10 +2,7 @@ package com.exp.day.netty.eventloop;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -21,13 +18,23 @@ import java.nio.charset.Charset;
 @Slf4j
 public class EventLoopServer {
     public static void main(String[] args) {
+        EventLoopGroup group=new DefaultEventLoopGroup();
+
         new ServerBootstrap()
-                .group(new NioEventLoopGroup())
+                //改进：参数分别是boss和worker。一个处理accept事件，一个处理读写事件
+                .group(new NioEventLoopGroup(),new NioEventLoopGroup(2))
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new ChannelInitializer<NioSocketChannel>() {
                     @Override
                     protected void initChannel(NioSocketChannel ch) throws Exception {
-                        ch.pipeline().addLast(new ChannelInboundHandlerAdapter(){
+                        ch.pipeline().addLast("handler_1",new ChannelInboundHandlerAdapter(){
+                            @Override
+                            public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                                ByteBuf buf=(ByteBuf)msg;
+                                log.debug(buf.toString(Charset.defaultCharset()));
+                                ctx.fireChannelRead(msg);
+                            }
+                        }).addLast(group,"handler_2",new ChannelInboundHandlerAdapter(){
                             @Override
                             public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
                                 ByteBuf buf=(ByteBuf)msg;
